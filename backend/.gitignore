@@ -9,5 +9,5 @@ __pycache__/
 *.pyd
 private_key.pem
 public_key.pem
-cert.key
+key.pem
 cert.pem
