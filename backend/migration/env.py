@@ -8,7 +8,6 @@ from alembic import context
 from database.database import Base
 from models.user import User
 from models.role import Role
-from models.role_rights import RoleRights
 from models.post import Post
 
 # this is the Alembic Config object, which provides
