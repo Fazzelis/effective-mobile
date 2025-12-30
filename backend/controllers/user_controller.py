@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Response, Cookie
 from schemas.request.user_request_schemas import UserRegistrationRequestSchema, UserLoginRequestSchema, UserPatchRequestSchema
-from schemas.response.user_response_schema import UserInfoSchema, UserLogoutSchema, UserFullInfoSchema
+from schemas.response.user_response_schemas import UserInfoSchema, UserLogoutSchema, UserFullInfoSchema
 from dependencies import get_user_service
 from services.user_service import UserService
-from schemas.response.user_response_schema import UserAuthSchema
+from schemas.response.user_response_schemas import UserAuthSchema
 from fastapi.security import HTTPAuthorizationCredentials
 from configuration import settings
 

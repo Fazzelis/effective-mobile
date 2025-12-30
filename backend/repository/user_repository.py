@@ -15,14 +15,16 @@ class UserRepository:
             surname: str,
             patronymic: str,
             email: str,
-            password: str
+            password: str,
+            role_id: UUID
     ) -> User:
         new_user = User(
             name=name,
             surname=surname,
             patronymic=patronymic,
             email=email,
-            password=password
+            password=password,
+            role_id=role_id
         )
         self.db.add(new_user)
         await self.db.commit()

@@ -1,9 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from repository.user_repository import UserRepository
+from repository.role_repository import RoleRepository
 from schemas.request.user_request_schemas import UserRegistrationRequestSchema, UserLoginRequestSchema, UserPatchRequestSchema
-from schemas.response.user_response_schema import UserInfoSchema, UserLogoutSchema
+from schemas.response.user_response_schemas import UserInfoSchema, UserLogoutSchema
 from fastapi import Response, HTTPException, status
-from schemas.response.user_response_schema import UserAuthSchema, UserFullInfoSchema
+from schemas.response.user_response_schemas import UserAuthSchema, UserFullInfoSchema
 from schemas.internal.token_schemas import TokenInfoSchema
 from utils.jwt_utils import generate_token, decode_jwt
 from configuration import settings
@@ -14,6 +15,7 @@ from jwt import ExpiredSignatureError
 class UserService:
     def __init__(self, db: AsyncSession):
         self.user_repository: UserRepository = UserRepository(db=db)
+        self.role_repository: RoleRepository = RoleRepository(db=db)
 
     async def create(
             self,
@@ -31,12 +33,14 @@ class UserService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Пользователь с такой почтой уже существует"
             )
+        role = await self.role_repository.get_by_name(name="user")
         user = await self.user_repository.post(
             name=payload.name,
             surname=payload.surname,
             patronymic=payload.patronymic,
             email=payload.email,
-            password=get_hash(item=payload.password)
+            password=get_hash(item=payload.password),
+            role_id=role.id
         )
 
         access_token = generate_token(user_id=user.id, token_type="access")
