@@ -4,7 +4,7 @@ from schemas.request.role_request_schemas import RoleRequestSchema, RolePatchReq
 from dependencies import get_role_service
 from services.role_service import RoleService
 from configuration import settings
-from schemas.response.role_response_schemas import RoleResponseSchema
+from schemas.response.role_response_schemas import RoleResponseSchema, RolesResponseSchema
 from uuid import UUID
 
 
@@ -23,7 +23,7 @@ async def create(
     return await role_service.create(payload=payload, encoded_jwt=credentials.credentials)
 
 
-@router.get("")
+@router.get("", response_model=RolesResponseSchema)
 async def get_all_roles(
         page: int = Query(1, ge=1, description="Номер страницы"),
         page_size: int = Query(5, ge=1, le=100, description="Количество элементов на странице"),

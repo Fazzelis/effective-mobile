@@ -65,7 +65,7 @@ class RoleService:
             encoded_jwt: str | None,
             page: int,
             page_size: int,
-    ):
+    ) -> RolesResponseSchema:
         if not encoded_jwt:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
