@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, Response, Cookie
-from schemas.request.user_request_schemas import UserRegistrationRequestSchema, UserLoginRequestSchema, UserPatchRequestSchema
+from fastapi import APIRouter, Depends, Response, Cookie, Query
+from schemas.request.user_request_schemas import UserRegistrationRequestSchema, UserLoginRequestSchema
+from schemas.request.user_request_schemas import UserPatchRequestSchema, UserChangeRoleRequestSchema
 from schemas.response.user_response_schemas import UserInfoSchema, UserLogoutSchema, UserFullInfoSchema
+from schemas.response.user_response_schemas import UserChangedRoleResponseSchema
 from dependencies import get_user_service
 from services.user_service import UserService
 from schemas.response.user_response_schemas import UserAuthSchema
@@ -74,3 +76,22 @@ async def get_profile(
         user_service: UserService = Depends(get_user_service)
 ) -> UserFullInfoSchema:
     return await user_service.get_profile(encoded_jwt=credentials.credentials)
+
+
+@router.get("/all")
+async def get_all(
+        page: int = Query(default=1, ge=1, description="Номер страницы"),
+        page_size: int = Query(default=5, ge=1, le=100, description="Количество элементов на странице"),
+        credentials: HTTPAuthorizationCredentials = Depends(settings.http_bearer),
+        user_service: UserService = Depends(get_user_service)
+):
+    return await user_service.get_all(encoded_jwt=credentials.credentials, page=page, page_size=page_size)
+
+
+@router.patch("/change-role", response_model=UserChangedRoleResponseSchema)
+async def change_role(
+        payload: UserChangeRoleRequestSchema,
+        credentials: HTTPAuthorizationCredentials = Depends(settings.http_bearer),
+        user_service: UserService = Depends(get_user_service)
+):
+    return await user_service.change_role(payload=payload, encoded_jwt=credentials.credentials)

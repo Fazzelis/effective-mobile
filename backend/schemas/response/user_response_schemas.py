@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from uuid import UUID
 from schemas.internal.token_schemas import TokenInfoSchema
+from schemas.internal.pagination_schemas import PaginationSchema
 
 
 class UserAuthSchema(BaseModel):
@@ -21,3 +22,21 @@ class UserFullInfoSchema(UserInfoSchema):
 
 class UserLogoutSchema(BaseModel):
     message: str
+
+
+class UserChangedRoleResponseSchema(BaseModel):
+    id: UUID
+    name: str
+    surname: str
+    patronymic: str
+    email: str
+    role_name: str
+
+
+class UserWithRoleNameResponseSchema(UserFullInfoSchema):
+    role_name: str
+
+
+class UsersResponseSchema(BaseModel):
+    pagination: PaginationSchema
+    users: list[UserWithRoleNameResponseSchema]

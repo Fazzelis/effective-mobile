@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from uuid import UUID
 
 
 class UserRegistrationRequestSchema(BaseModel):
@@ -20,3 +21,8 @@ class UserPatchRequestSchema(BaseModel):
     name: Optional[str] = None
     surname: Optional[str] = None
     patronymic: Optional[str] = None
+
+
+class UserChangeRoleRequestSchema(BaseModel):
+    user_id: UUID
+    role_id: UUID

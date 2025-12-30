@@ -2,14 +2,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from repository.user_repository import UserRepository
 from repository.role_repository import RoleRepository
 from schemas.request.user_request_schemas import UserRegistrationRequestSchema, UserLoginRequestSchema, UserPatchRequestSchema
-from schemas.response.user_response_schemas import UserInfoSchema, UserLogoutSchema
+from schemas.response.user_response_schemas import UserInfoSchema, UserLogoutSchema, UserChangedRoleResponseSchema
 from fastapi import Response, HTTPException, status
-from schemas.response.user_response_schemas import UserAuthSchema, UserFullInfoSchema
+from schemas.response.user_response_schemas import UserAuthSchema, UserFullInfoSchema, UsersResponseSchema, UserWithRoleNameResponseSchema
 from schemas.internal.token_schemas import TokenInfoSchema
+from schemas.internal.pagination_schemas import PaginationSchema
 from utils.jwt_utils import generate_token, decode_jwt
 from configuration import settings
 from utils.hasher import get_hash, match_hash
 from jwt import ExpiredSignatureError
+from schemas.request.user_request_schemas import UserChangeRoleRequestSchema
 
 
 class UserService:
@@ -231,6 +233,107 @@ class UserService:
                 patronymic=user.patronymic,
                 email=user.email
             )
+        except ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Токен истек"
+            )
+
+    async def get_all(self, encoded_jwt: str | None, page: int, page_size: int) -> UsersResponseSchema:
+        if encoded_jwt is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Токен не найден"
+            )
+        try:
+            user_id = decode_jwt(token=encoded_jwt)
+            user = await self.user_repository.get_by_id(id=user_id)
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Пользователь не найден"
+                )
+            user_role = await self.role_repository.get_by_id(id=user.role_id)
+            if not user_role.manage_roles_access:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Нет прав"
+                )
+
+            users, total_count = await self.user_repository.get_all(page=page, page_size=page_size)
+            users_response = []
+            for user in users:
+                users_response.append(UserWithRoleNameResponseSchema(
+                    id=user.id,
+                    name=user.name,
+                    surname=user.surname,
+                    patronymic=user.patronymic,
+                    email=user.email,
+                    role_name=user.role.name
+                ))
+            return UsersResponseSchema(
+                pagination=PaginationSchema(
+                    page=page,
+                    page_size=page_size,
+                    total_count=total_count,
+                    total_pages=(total_count + page_size - 1) // page_size
+                ),
+                users=users_response
+            )
+        except ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Токен истек"
+            )
+
+    async def change_role(
+            self,
+            payload: UserChangeRoleRequestSchema,
+            encoded_jwt: str | None
+    ) -> UserChangedRoleResponseSchema:
+        if encoded_jwt is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Токен не найден"
+            )
+        try:
+            user_id = decode_jwt(token=encoded_jwt)
+            user = await self.user_repository.get_by_id(id=user_id)
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Пользователь не найден"
+                )
+            user_role = await self.role_repository.get_by_id(id=user.role_id)
+            if not user_role.manage_roles_access:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Нет прав"
+                )
+
+            user_for_edit = await self.user_repository.get_by_id(id=payload.user_id)
+            if not user_for_edit:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Пользователь не найден"
+                )
+            role = await self.role_repository.get_by_id(id=payload.role_id)
+            if not role:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Роль не найдена"
+                )
+            edited_user = await self.user_repository.change_role(user=user_for_edit, role_id=payload.role_id)
+
+            return UserChangedRoleResponseSchema(
+                id=edited_user.id,
+                name=edited_user.name,
+                surname=edited_user.surname,
+                patronymic=edited_user.patronymic,
+                email=edited_user.email,
+                role_name=role.name
+            )
+
         except ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
